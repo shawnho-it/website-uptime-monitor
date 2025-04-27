@@ -9,7 +9,7 @@ websites = [
     "https://example.com",
     "https://google.com",
     "https://github.com",
-    "https://stackoverflow.com",
+    "https://stackoverflow.com/questions",
     "https://amazon.com"
 ]
 
