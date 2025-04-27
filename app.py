@@ -16,21 +16,22 @@ websites = [
 
 # Website status dictionary
 status = {}
-
 def check_websites():
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
+    }
     while True:
         for site in websites:
             try:
-                response = requests.get(site, timeout=5)
-                if response.status_code == 200:
+                response = requests.get(site, headers=headers, timeout=5, allow_redirects=True)
+                if response.status_code in [200, 301, 302]:
                     status[site] = "UP"
                 else:
                     status[site] = "DOWN"
             except requests.RequestException:
                 status[site] = "DOWN"
         time.sleep(60)  # Check every 60 seconds
-
-# Background thread to check websites
+ thread to check websites
 threading.Thread(target=check_websites, daemon=True).start()
 
 @app.route('/')
