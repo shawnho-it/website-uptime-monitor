@@ -1,35 +1,42 @@
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify
+import threading
+import time
 import requests
 
 app = Flask(__name__)
-checks = []
 
-@app.route('/health', methods=['GET'])
-def health():
-    return "OK", 200
+# List of websites to monitor
+websites = [
+    "https://www.google.com",
+    "https://www.facebook.com",
+    "https://www.github.com",
+    "https://www.amazon.com",
+    "https://www.stackoverflow.com"
+]
 
-@app.route('/check', methods=['POST'])
-def check_website():
-    data = request.get_json()
-    url = data.get('url')
+# Website status dictionary
+status = {}
 
-    try:
-        response = requests.get(url, timeout=5)
-        status = 'UP' if response.status_code == 200 else 'DOWN'
-    except Exception:
-        status = 'DOWN'
+def check_websites():
+    while True:
+        for site in websites:
+            try:
+                response = requests.get(site, timeout=5)
+                status[site] = "UP" if response.status_code == 200 else "DOWN"
+            except requests.RequestException:
+                status[site] = "DOWN"
+        time.sleep(60)  # wait 1 minute before checking again
 
-    check_result = {
-        'url': url,
-        'status': status
-    }
-    checks.append(check_result)
+# Start background thread
+threading.Thread(target=check_websites, daemon=True).start()
 
-    return jsonify(check_result), 200
+@app.route('/')
+def home():
+    return "Website Uptime Monitor Running."
 
-@app.route('/checks', methods=['GET'])
-def get_checks():
-    return jsonify(checks)
+@app.route('/status')
+def get_status():
+    return jsonify(status)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
