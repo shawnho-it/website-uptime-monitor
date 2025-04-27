@@ -16,7 +16,8 @@ websites = [
 
 # Website status dictionary
 status = {}
-  def check_websites():
+
+def check_websites():
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
     }
@@ -31,7 +32,8 @@ status = {}
             except requests.RequestException:
                 status[site] = "DOWN"
         time.sleep(60)  # Check every 60 seconds
- thread to check websites
+
+# Start the background thread
 threading.Thread(target=check_websites, daemon=True).start()
 
 @app.route('/')
@@ -44,7 +46,6 @@ def get_status_json():
 
 @app.route('/dashboard')
 def dashboard():
-    # Simple HTML Template
     html_template = """
     <!doctype html>
     <html lang="en">
