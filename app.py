@@ -3,10 +3,8 @@ import threading
 import requests
 from flask import Flask, render_template_string
 
-# Initialize Flask app
 app = Flask(__name__)
 
-# List of websites to monitor
 websites = [
     "https://example.com",
     "https://google.com",
@@ -15,27 +13,33 @@ websites = [
     "https://amazon.com"
 ]
 
-# Status dictionary
 status = {site: "Unknown" for site in websites}
 
-# Website checking function
 def check_websites():
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
     }
     while True:
+        new_status = {}
         for site in websites:
             try:
                 response = requests.get(site, headers=headers, timeout=5, allow_redirects=True)
                 if response.status_code in [200, 301, 302]:
-                    status[site] = "UP"
+                    new_status[site] = "UP"
                 else:
-                    status[site] = "DOWN"
+                    new_status[site] = "DOWN"
             except requests.RequestException:
-                status[site] = "DOWN"
-        time.sleep(30)  # Recheck every 30 seconds
+                new_status[site] = "DOWN"
+        global status
+        status = new_status
+        time.sleep(30)
 
-# Route for dashboard
+@app.before_first_request
+def activate_job():
+    thread = threading.Thread(target=check_websites)
+    thread.daemon = True
+    thread.start()
+
 @app.route("/")
 def dashboard():
     html = """
@@ -43,7 +47,7 @@ def dashboard():
     <html lang="en">
     <head>
         <title>Website Uptime Monitor</title>
-        <meta http-equiv="refresh" content="15"> <!-- Auto-refresh every 15 seconds -->
+        <meta http-equiv="refresh" content="15">
         <style>
             body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; }
             table { width: 60%; margin: auto; border-collapse: collapse; }
@@ -78,11 +82,5 @@ def dashboard():
     return render_template_string(html, status=status)
 
 if __name__ == "__main__":
-    # Start background thread
-    t = threading.Thread(target=check_websites)
-    t.daemon = True
-    t.start()
-
-    # Start Flask app
     app.run(host="0.0.0.0", port=5000)
 
