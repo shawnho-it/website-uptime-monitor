@@ -1,22 +1,24 @@
-from flask import Flask, jsonify, render_template_string
-import threading
 import time
+import threading
 import requests
+from flask import Flask, render_template_string
 
+# Initialize Flask app
 app = Flask(__name__)
 
 # List of websites to monitor
 websites = [
-    "https://www.google.com",
-    "https://www.facebook.com",
-    "https://www.github.com",
-    "https://www.amazon.com",
-    "https://www.stackoverflow.com"
+    "https://example.com",
+    "https://google.com",
+    "https://github.com",
+    "https://stackoverflow.com",
+    "https://amazon.com"
 ]
 
-# Website status dictionary
-status = {}
+# Status dictionary to keep track of website statuses
+status = {site: "Unknown" for site in websites}
 
+# Function to check the websites' statuses
 def check_websites():
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36"
@@ -31,55 +33,42 @@ def check_websites():
                     status[site] = "DOWN"
             except requests.RequestException:
                 status[site] = "DOWN"
-        time.sleep(60)  # Check every 60 seconds
+        time.sleep(60)  # Wait 60 seconds before checking again
 
-# Start the background thread
-threading.Thread(target=check_websites, daemon=True).start()
-
-@app.route('/')
-def home():
-    return "Website Uptime Monitor Running."
-
-@app.route('/status')
-def get_status_json():
-    return jsonify(status)
-
-@app.route('/dashboard')
+# Flask route for dashboard
+@app.route("/")
 def dashboard():
-    html_template = """
+    html = """
     <!doctype html>
     <html lang="en">
     <head>
-        <meta http-equiv="refresh" content="60">
-        <title>Website Uptime Monitor Dashboard</title>
-        <style>
-            body { font-family: Arial, sans-serif; margin: 40px; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-            .up { color: green; font-weight: bold; }
-            .down { color: red; font-weight: bold; }
-        </style>
+        <title>Website Uptime Monitor</title>
+        <meta http-equiv="refresh" content="30">  <!-- Auto refresh page every 30 seconds -->
     </head>
     <body>
-        <h1>🌐 Website Uptime Monitor</h1>
-        <table>
+        <h1>Website Uptime Status</h1>
+        <table border="1" cellpadding="10" cellspacing="0">
             <tr>
                 <th>Website</th>
                 <th>Status</th>
             </tr>
-            {% for site, state in status.items() %}
+            {% for site, stat in status.items() %}
             <tr>
                 <td>{{ site }}</td>
-                <td class="{{ state|lower }}">{{ state }}</td>
+                <td>{{ stat }}</td>
             </tr>
             {% endfor %}
         </table>
-        <p><i>Auto-refreshes every 60 seconds</i></p>
     </body>
     </html>
     """
-    return render_template_string(html_template, status=status)
+    return render_template_string(html, status=status)
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+if __name__ == "__main__":
+    # Start background thread for checking websites
+    t = threading.Thread(target=check_websites)
+    t.daemon = True
+    t.start()
+    # Start Flask server
+    app.run(host="0.0.0.0", port=5000)
 
