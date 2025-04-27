@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, render_template_string
 import threading
 import time
 import requests
@@ -22,12 +22,15 @@ def check_websites():
         for site in websites:
             try:
                 response = requests.get(site, timeout=5)
-                status[site] = "UP" if response.status_code == 200 else "DOWN"
+                if response.status_code == 200:
+                    status[site] = "UP"
+                else:
+                    status[site] = "DOWN"
             except requests.RequestException:
                 status[site] = "DOWN"
-        time.sleep(60)  # wait 1 minute before checking again
+        time.sleep(60)  # Check every 60 seconds
 
-# Start background thread
+# Background thread to check websites
 threading.Thread(target=check_websites, daemon=True).start()
 
 @app.route('/')
@@ -35,8 +38,45 @@ def home():
     return "Website Uptime Monitor Running."
 
 @app.route('/status')
-def get_status():
+def get_status_json():
     return jsonify(status)
+
+@app.route('/dashboard')
+def dashboard():
+    # Simple HTML Template
+    html_template = """
+    <!doctype html>
+    <html lang="en">
+    <head>
+        <meta http-equiv="refresh" content="60">
+        <title>Website Uptime Monitor Dashboard</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+            .up { color: green; font-weight: bold; }
+            .down { color: red; font-weight: bold; }
+        </style>
+    </head>
+    <body>
+        <h1>🌐 Website Uptime Monitor</h1>
+        <table>
+            <tr>
+                <th>Website</th>
+                <th>Status</th>
+            </tr>
+            {% for site, state in status.items() %}
+            <tr>
+                <td>{{ site }}</td>
+                <td class="{{ state|lower }}">{{ state }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        <p><i>Auto-refreshes every 60 seconds</i></p>
+    </body>
+    </html>
+    """
+    return render_template_string(html_template, status=status)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
