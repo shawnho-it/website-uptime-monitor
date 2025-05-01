@@ -8,7 +8,7 @@ app = Flask(__name__)
 websites = [
     "https://example.com",
     "https://google.com",
-    "https://github.com",,
+    "https://github.com",
     "https://amazon.com"
 ]
 
